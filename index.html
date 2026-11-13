@@ -60,15 +60,15 @@
   <script type="text/javascript">
     "use strict";
 
-    var eof = /\n*$/;
     var transformer = {
       keysub: function(data) {
-        var contexts = data.input.value.replace(/\n{3,}/g, "\n\n").replace(eof, "").split(/\n{2}/);
+        var contexts = data.input.value.trim().split(/\n\s*\n/);
         var re =/^\d+\s*([^ ]+),(\d+)\s+-->\s+([^ ]+),(\d+)(?:\s*\n((.*\n?)*))?/;
 
-        contexts = contexts.map(function(cxt) {
+        contexts = contexts.map(function(cxt, i) {
           var m = re.exec(cxt);
-          var contents = m[5].split("\n");
+          if(!m) throw new Error("Keysub entry " + (i+1) + " is not in the expected format:\n\n" + cxt);
+          var contents = (m[5] || '').split("\n");
           contents.push('//');
           if(contents.length<3) contents.unshift('');
 
@@ -79,8 +79,8 @@
       },
 
       hangul: function(data) {
-        var contexts = data.input.value.replace(/\t<끝>/,'').split(/\t\/\/\n/);
-        contexts = contexts.filter(function(cxt){return cxt.length>1;});
+        var contexts = data.input.value.replace(/\t<끝>/,'').split(/\t\/\/[ \t]*(?:\n|$)/);
+        contexts = contexts.filter(function(cxt){return /\S/.test(cxt);});
         contexts = contexts.map(function(cxt) {
           
           cxt = cxt.split("\t").filter(function(item){return item.length>1;});
@@ -88,18 +88,16 @@
         });
         
         var timestamp={};
-        var timeTable = ['00', '01', '02', '03'];
 
         for(var i=0; i<contexts.length; ++i) {
-          if(contexts[i][0] in timestamp) {
-            timestamp[contexts[i][0]]++;
-            console.log('true');
-          } else {
-            timestamp[contexts[i][0]] = 0;
-          }
-          var timeIndex = timestamp[contexts[i][0]];
-          contexts[i][0] = timeTable[timeIndex] + ':' + contexts[i][0].match(/(\d{2})/g).join(':');
-          
+          var first = contexts[i][0] || '';
+          var stamp = first.match(/(\d{2})/g);
+          if(!stamp || stamp.length!==2) throw new Error("한글 entry " + (i+1) + " does not start with an MMSS time stamp: " + first.trim());
+          var key = stamp.join('');
+          timestamp[key] = (key in timestamp) ? timestamp[key]+1 : 0;
+          var hour = timestamp[key];
+          contexts[i][0] = (hour<10 ? '0' : '') + hour + ':' + stamp.join(':');
+
           contexts[i].unshift(i+1);
         }
         
@@ -127,8 +125,12 @@
         }
       }
 
-      if(data[selected].input.value==='') return;
-      transformer[selected](data[selected]);
+      if(data[selected].input.value.trim()==='') return;
+      try {
+        transformer[selected](data[selected]);
+      } catch(e) {
+        alert(e.message);
+      }
     }
   </script>
 
