@@ -1,0 +1,138 @@
+﻿<html>
+
+<head>
+
+  <title>Keysub ⇔ 한글</title>
+
+  <style type="text/css">
+    * { font-family: Arial, 굴림; font-size: 9pt;}
+    dl { font-weight: bold; margin: 40px 0px 10px 0px; padding: 1px; color: #666666;}
+    dd { margin: 0px;}
+    label { font-weight: bold; color:#666666;}
+    textarea { margin: 0px; padding: 6px;}
+
+    #content { width: 510px; margin: auto; padding: 0px;}
+    #control { float: right; }
+    #keysub_area { width: 100%; }
+    #hangul_area { width: 100%; }
+    #transform {
+      margin: 0px 0px 4px 10px;
+      padding: 4px;
+      border: 1px solid;
+      border-color: #acacac;
+      font-weight: bold;
+      color: #666666;
+      background-color: #FFFFFF;
+    }
+
+    #footer {
+      width: 510px;
+      margin: auto;
+      padding: 30px;
+      color: #acacac;
+      text-align: right;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <div id='content'>
+    <div id='control'>
+      <label><input type='radio' name='transform_selection' value='keysub' checked='checked'/>Keysub to 한글</label>
+      <label><input type='radio' name='transform_selection' value='hangul'/>한글 to keysub</label>
+      <input type='button' id='transform' value='Transform'/>
+    </div>
+    <div id='keysub'>
+      <dl>Keysub: </dl>
+      <dd><textarea type='text' id='keysub_area' rows='10'></textarea></dd>
+    </div>
+    <div id='hangul'>
+      <dl>한글: </dl>
+      <dd><textarea type='text' id='hangul_area' rows='10'></textarea></dd>
+    </div>
+  </div>
+  <div id='footer'>
+    <p>Designed by <b>D</b>eokho <b>K</b>im</p>
+  </div>
+  <script type="text/javascript">
+    "use strict";
+
+    var eof = /\n*$/;
+    var transformer = {
+      keysub: function(data) {
+        var contexts = data.input.value.replace(/\n{3,}/g, "\n\n").replace(eof, "").split(/\n{2}/);
+        var re =/^\d+\s*([^ ]+),(\d+)\s+-->\s+([^ ]+),(\d+)(?:\s*\n((.*\n?)*))?/;
+
+        contexts = contexts.map(function(cxt) {
+          var m = re.exec(cxt);
+          var contents = m[5].split("\n");
+          contents.push('//');
+          if(contents.length<3) contents.unshift('');
+
+          return m[1].split(':').slice(1,3).join('') + "\t" + contents.join("\n\t");
+        });
+
+        data.output.value = contexts.join("\n") + "\n\t<끝>";
+      },
+
+      hangul: function(data) {
+        var contexts = data.input.value.replace(/\t<끝>/,'').split(/\t\/\/\n/);
+        contexts = contexts.filter(function(cxt){return cxt.length>1;});
+        contexts = contexts.map(function(cxt) {
+          
+          cxt = cxt.split("\t").filter(function(item){return item.length>1;});
+          return cxt;
+        });
+        
+        var timestamp={};
+        var timeTable = ['00', '01', '02', '03'];
+
+        for(var i=0; i<contexts.length; ++i) {
+          if(contexts[i][0] in timestamp) {
+            timestamp[contexts[i][0]]++;
+            console.log('true');
+          } else {
+            timestamp[contexts[i][0]] = 0;
+          }
+          var timeIndex = timestamp[contexts[i][0]];
+          contexts[i][0] = timeTable[timeIndex] + ':' + contexts[i][0].match(/(\d{2})/g).join(':');
+          
+          contexts[i].unshift(i+1);
+        }
+        
+        contexts = contexts.map(function(cxt) {
+          return cxt[0] + "\n" + cxt[1] + ',000 --> ' + cxt[1] + ",999\n" + cxt.slice(2).join('');
+        });
+       
+        data.output.value = contexts.join("\n");
+      }
+    };
+
+    document.getElementById('transform').onclick = function() {
+      var modes = document.getElementsByName('transform_selection');
+      var selected = (modes[0].checked) ? modes[0].value : modes[1].value;
+
+
+      var data = {
+        keysub: {
+          input: document.getElementById('keysub_area'),
+          output: document.getElementById('hangul_area')
+        },
+        hangul: {
+          input: document.getElementById('hangul_area'),
+          output: document.getElementById('keysub_area')
+        }
+      }
+
+      if(data[selected].input.value==='') return;
+      transformer[selected](data[selected]);
+    }
+  </script>
+
+  </body>
+
+</html>
+
