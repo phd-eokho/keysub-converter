@@ -13,6 +13,8 @@ A single-page, offline tool that converts subtitle text between two layouts by c
 2. Choose the direction: **Keysub to 한글** or **한글 to keysub**.
 3. Paste the source text into its box, press **Transform**, and copy the result from the other box.
 
+If an entry cannot be read, a message names it and the other box is left unchanged.
+
 ## Formats
 
 This on the Keysub side:
@@ -50,7 +52,7 @@ The 한글 layout holds less information than the Keysub one, so converting ther
 
 - **Keysub to 한글** keeps only the minutes and seconds of the start time. The hour, the milliseconds and the end time are dropped.
 - **한글 to keysub** numbers the entries from 1 and gives each one a one-second span, from `,000` to `,999` of its stamp.
-- **Hours** are rebuilt from repeats: the first entry with a given stamp gets hour `00`, the next entry with the same stamp gets `01`, and so on up to `03`.
+- **Hours** are rebuilt from repeats: the first entry with a given stamp gets hour `00`, the next entry with the same stamp gets `01`, and so on.
 
 ## License
 
